@@ -15,7 +15,7 @@ While dd is a bdd package, we merely use the boolean formula parser from it. We 
 
 - minisat SAT solver
 
-Most typical way to install: `apt install minisat'
+Most typical way to install: apt install minisat
 
 # Usage
 
@@ -23,7 +23,7 @@ Most typical way to install: `apt install minisat'
 
 python3 bool2sat.py [formula filename]
 
-You can write your fomula in a file and provide it as an argument.
+You can write your fomula in a file and provide filename as an argument.
 
 Alternatively you can drop the filename and either pipe or type in the formula on stdin.
 
