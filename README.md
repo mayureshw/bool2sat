@@ -23,7 +23,7 @@ Most typical way to install: apt install minisat
 
 python3 bool2sat.py [formula filename]
 
-You can write your fomula in a file and provide filename as an argument.
+You can write your formula in a file and provide filename as an argument.
 
 Alternatively you can drop the filename and either pipe or type in the formula on stdin.
 

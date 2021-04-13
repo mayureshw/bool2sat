@@ -22,9 +22,11 @@ class CNF:
     cnfopfile = 'cnf.txt'
     satopfile = 'satop.txt'
     parser = Parser()
+    nodecntr = 0
+    varid = {}
     def nextid(self):
-        self.nodecntr = self.nodecntr + 1
-        return self.nodecntr
+        CNF.nodecntr = CNF.nodecntr + 1
+        return CNF.nodecntr
     def spec2cnf(self,spec,args): return [ (-1 if i<0 else 1)*args[abs(i)-1] for i in spec ]
     def _cnf(self,node): return (
         [self.spec2cnf(sumspec, [node.id]+[o.id for o in node.operands])
@@ -36,11 +38,11 @@ class CNF:
             node.id = self.nextid()
             for arg in node.operands: self.visit(arg)
         else:
-            if node.value in self.varid:
-                node.id = self.varid[node.value]
+            if node.value in CNF.varid:
+                node.id = CNF.varid[node.value]
             else:
                 node.id = self.nextid()
-                self.varid[node.value] = node.id
+                CNF.varid[node.value] = node.id
     def dimacs(self): return ' '.join(' '.join(str(d) for d in c+[0]) for c in self.cnf)
 
     # Generate cnf indimacs form in cnfopfile
@@ -55,21 +57,19 @@ class CNF:
         print(satop.stdout)
         if satop.returncode == 10:
             print('Decoding the satisfiable assigment...')
-            idvar = { i:v for v,i in self.varid.items() }
+            idvar = { i:v for v,i in CNF.varid.items() }
             with open(self.satopfile) as fd:
                 satsoln = [int(i) for i in fd.readlines()[-1].split()[:-1]]
             usersoln = [('~' if i<0 else '') + idvar[abs(i)] for i in satsoln if abs(i) in idvar]
             print(' '.join(usersoln))
             
     def __init__(self,formula):
-        self.nodecntr = 0
-        self.varid = {}
-        try: self.root = self.parser.parse(formula)
+        try: root = self.parser.parse(formula)
         except Exception:
             print('parse error')
             sys.exit()
-        self.visit(self.root)
-        self.cnf = self._cnf(self.root) + [[1]]
+        self.visit(root)
+        self.cnf = self._cnf(root) + [[1]]
     
 # If invoked as command, reads boolean formula from filename if specified as
 # argument else from stdin. Produces cnf.txt and satop.txt and minisat stdout
