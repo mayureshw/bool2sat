@@ -23,7 +23,12 @@ class CNF:
     satopfile = 'satop.txt'
     parser = Parser()
     nodecntr = 0
-    varid = {}
+    _varid = {}
+    def varid(self,v):
+        if v in CNF._varid: return CNF._varid[v]
+        newid = self.nextid()
+        CNF._varid[v] = newid
+        return newid
     def nextid(self):
         CNF.nodecntr = CNF.nodecntr + 1
         return CNF.nodecntr
@@ -33,16 +38,11 @@ class CNF:
             for sumspec in self.cnftbl[node.operator]] +
         [cnf for c in node.operands if c.type=='operator' for cnf in self._cnf(c)]
         ) if node.type == 'operator' else [[node.id]]
-    def visit(self,node):
+    def visit(self,node,givenid=None):
         if node.type == 'operator':
-            node.id = self.nextid()
+            node.id = givenid if givenid!=None else self.nextid()
             for arg in node.operands: self.visit(arg)
-        else:
-            if node.value in CNF.varid:
-                node.id = CNF.varid[node.value]
-            else:
-                node.id = self.nextid()
-                CNF.varid[node.value] = node.id
+        else: node.id = self.varid(node.value)
     def dimacs(self): return ' '.join(' '.join(str(d) for d in c+[0]) for c in self.cnf)
 
     # Generate cnf indimacs form in cnfopfile
@@ -57,19 +57,23 @@ class CNF:
         print(satop.stdout)
         if satop.returncode == 10:
             print('Decoding the satisfiable assigment...')
-            idvar = { i:v for v,i in CNF.varid.items() }
+            idvar = { i:v for v,i in CNF._varid.items() }
             with open(self.satopfile) as fd:
                 satsoln = [int(i) for i in fd.readlines()[-1].split()[:-1]]
             usersoln = [('~' if i<0 else '') + idvar[abs(i)] for i in satsoln if abs(i) in idvar]
             print(' '.join(usersoln))
             
-    def __init__(self,formula):
+    def __init__(self,formula,opvar=None):
         try: root = self.parser.parse(formula)
         except Exception:
             print('parse error')
             sys.exit()
-        self.visit(root)
-        self.cnf = self._cnf(root) + [[1]]
+        if opvar and root.type != 'operator':
+            print('opvar argument not supported for atomic formulas')
+            sys.exit()
+        rootid = self.varid(opvar) if opvar else 1
+        self.visit(root,rootid)
+        self.cnf = self._cnf(root) + [[rootid]]
     
 # If invoked as command, reads boolean formula from filename if specified as
 # argument else from stdin. Produces cnf.txt and satop.txt and minisat stdout
