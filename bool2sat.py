@@ -69,6 +69,31 @@ class CNF:
                 for i in satsoln if abs(i) in idvar])
         else: return 'false'
             
+    # Returns a new cnf object by eliminating variable v by truth value tv
+    def let(self,v,tv):
+        vid = self.varid(v)
+        o = CNF(self.opvar)
+        elimsumwith = vid if tv else -vid
+        elimvar = -vid if tv else vid
+        o.cnfworoot = [ [e for e in sumterm if e!= elimvar ]
+            for sumterm in self.cnfworoot if elimsumwith not in sumterm ]
+        o.definedvars = [ d for d in self.definedvars if d!= vid ]
+        o.inpvars = [ i for i in self.inpvars if i!= vid ]
+        return o
+
+    def rename(self,x,y):
+        vx = self.varid(x)
+        vy = self.varid(y)
+        o = CNF(self.opvar)
+        subst = lambda l : [ vy if e == vx else -vy if e == -vx else e for e in l]
+        o.cnfworoot = [ subst(sumterm) for sumterm in self.cnfworoot ]
+        o.definedvars = subst(self.definedvars)
+        o.inpvars = subst(self.inpvars)
+        if o.opvar == x:
+            o.opvar = y
+            o.opvarid = vy
+        return o
+
     # We follow factory pattern of construction, to make it easy to construct blank objects
     # which is required in operator overloading for and
 
@@ -80,6 +105,8 @@ class CNF:
         except Exception:
             print('parse error')
             sys.exit()
+        # for atomic formula we need special handling, for now, and with itself
+        if root.type != 'operator': root = o.parser.parse(formula + '&' + formula)
         root.id = o.opvarid
         o.inpvars = set()
         o.visit(root,idgiven=True)
