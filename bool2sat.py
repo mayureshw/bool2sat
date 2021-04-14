@@ -100,12 +100,25 @@ class CNF:
         o.opvarid = o.varid(opvar)
         o.inpvars = o.inpvars - { o.varid(v) for v in eqns }
         return o
-    
+
+    @classmethod
+    def bymerge(cls,opvar,cnfs):
+        o = reduce(lambda l,r: l&r,cnfs)
+        o.opvarid = o.varid(opvar)
+        o.inpvars = o.inpvars - { c.opvarid for c in cnfs }
+        return o
+
 # When opvar support was added CLI was removed. A new CLI may be added later
 # This is merely a test driver now
 if __name__=='__main__':
     cnf1 = CNF.byformula('p','a&b')
     print(cnf1.minisat())
 
-    cnf2 = CNF.byequations('q',{'p':'a&b','q':'p&d',})
-    print(cnf2.minisat(-cnf2.varid('p')))
+    cnf2 = CNF.byformula('q','p&d')
+    print(cnf2.minisat())
+
+    cnf3 = CNF.bymerge('q',[cnf1,cnf2])
+    print(cnf3.minisat())
+
+    cnf4 = CNF.byequations('q',{'p':'a&b','q':'p&d',})
+    print(cnf4.minisat(-cnf2.varid('p')))
