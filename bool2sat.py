@@ -45,7 +45,9 @@ class CNF:
         if node.type == 'operator':
             if not idgiven: node.id = self.nextid()
             for arg in node.operands: self.visit(arg)
-        else: node.id = self.varid(node.value)
+        else:
+            node.id = self.varid(node.value)
+            self.inpvars.add(node.id)
     def dimacs(self,opvarid=None): return ' '.join(' '.join(
         str(d) for d in c+[0]) for c in self.cnf(opvarid))
 
@@ -67,46 +69,46 @@ class CNF:
                 for i in satsoln if abs(i) in idvar])
         else: return 'false'
             
-    # setting of opvarid and trimming of inpvars has to be handled by caller,
-    # treat & operator for internal use unless you know what you are doing
-    def __and__(self,rval):
-        o = CNF()
-        o.cnfworoot = self.cnfworoot + rval.cnfworoot
-        o.inpvars = self.inpvars.union(rval.inpvars)
-        return o
-
     # We follow factory pattern of construction, to make it easy to construct blank objects
     # which is required in operator overloading for and
 
     # Construction method by naming an opvar and a formula (string)
     @classmethod
     def byformula(cls,opvar,formula):
-        o = CNF()
+        o = CNF(opvar)
         try: root = o.parser.parse(formula)
         except Exception:
             print('parse error')
             sys.exit()
-        o.opvarid = o.varid(opvar)
         root.id = o.opvarid
+        o.inpvars = set()
         o.visit(root,idgiven=True)
         o.cnfworoot = o._cnf(root)
-        o.inpvars = { v for p in o.cnfworoot for v in p if v != o.opvarid }
+        o.definedvars = {o.opvarid}
+        o.inpvars = o.inpvars - o.definedvars
         return o
 
     # Method to construct cnf from a number of variables in a dictionary eqns and top opvar
     @classmethod
-    def byequations(cls,opvar,eqns):
-        o = reduce(lambda l,r: l&r, [CNF.byformula(o,f) for o,f in eqns.items()])
-        o.opvarid = o.varid(opvar)
-        o.inpvars = o.inpvars - { o.varid(v) for v in eqns }
-        return o
+    def byequations(cls,opvar,eqns): return CNF.bymerge(opvar,
+        [CNF.byformula(o,f) for o,f in eqns.items()])
 
+    def mergein(self,other):
+        self.cnfworoot = self.cnfworoot + other.cnfworoot
+        self.definedvars.update(other.definedvars)
+        self.inpvars = self.inpvars.union(other.inpvars) - self.definedvars
+        return self
+    # Method to construct cnf by merger of multiple cnfs
     @classmethod
-    def bymerge(cls,opvar,cnfs):
-        o = reduce(lambda l,r: l&r,cnfs)
-        o.opvarid = o.varid(opvar)
-        o.inpvars = o.inpvars - { c.opvarid for c in cnfs }
-        return o
+    def bymerge(cls,opvar,cnfs): return reduce(lambda c1,c2: c1.mergein(c2), cnfs, CNF(opvar))
+
+    # Constructor not meant to be invoked from outside, please use by* methods above
+    def __init__(self,opvar=None):
+        self.opvar = opvar
+        self.opvarid = self.varid(opvar)
+        self.cnfworoot = []
+        self.definedvars = set()
+        self.inpvars = set()
 
 # When opvar support was added CLI was removed. A new CLI may be added later
 # This is merely a test driver now
