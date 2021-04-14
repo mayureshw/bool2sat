@@ -51,7 +51,7 @@ class CNF:
     def dimacs(self,opvarid=None): return ' '.join(' '.join(
         str(d) for d in c+[0]) for c in self.cnf(opvarid))
 
-    # Generate cnf indimacs form in cnfopfile
+    # Generate cnf in dimacs form in cnfopfile
     def dump(self,opvarid=None):
         with open(self.cnfopfile,'w') as fd: fd.write(self.dimacs(opvarid))
 
