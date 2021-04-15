@@ -88,7 +88,7 @@ class CNF:
         substf = lambda l: [(subst.get(v,v) if v>0 else -subst.get(-v,-v) ) for v in l]
         o.cnfworoot = [ substf(sumterm) for sumterm in o.cnfworoot ]
         o.definedvars = set(substf(d for d in self.definedvars if d!= vid) + [o.opvarid])
-        o.inpvars = substf(i for i in self.inpvars if i!= vid)
+        o.inpvars = set(substf(i for i in self.inpvars if i!= vid))
         return o
 
     # bdd is only for experimental purpose, returns a tuple of bdd and with op
