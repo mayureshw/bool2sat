@@ -3,7 +3,10 @@ from dd._parser import Parser
 from functools import reduce
 import subprocess
 import sys
+from pybdd import BMgr # Only for development purposes
 class CNF:
+    bmgr = BMgr()
+
     # Various CNF transformations are taken from here:
     # https://en.wikipedia.org/wiki/Tseytin_transformation There is virtually
     # no restriction on adding operators. Any single output operator can be
@@ -93,6 +96,20 @@ class CNF:
             o.opvar = y
             o.opvarid = vy
         return o
+
+    # bdd is only for experimental purpose, returns a tuple of bdd and with op
+    # and intermediate variables quatified out
+    def bdd(self):
+        cnf = self.cnf()
+        idvar = { i:v for v,i in self._varid.items() }
+        n2v = lambda n: idvar.get(abs(n),'v'+str(abs(n)))
+        self.bmgr.declare(*[ n2v(t) for p in cnf for t in p ])
+        n2bv = lambda n: ('~' if n<0 else '')+n2v(n)
+        bdd = self.bmgr.andL(self.bmgr.orL(self.bmgr.add_expr(n2bv(t)) for t in p) for p in cnf)
+        bddo = self.bmgr.shcf1(bdd,self.opvar)
+        qvars = [s for s in self.bmgr.support(bdd) if s not in self._varid]
+        bddv = self.bmgr.equantL(bddo,qvars)
+        return bdd,bddv
 
     # We follow factory pattern of construction, to make it easy to construct blank objects
     # which is required in operator overloading for and
