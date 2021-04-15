@@ -82,16 +82,15 @@ class CNF:
         elimvar = -vid if tv else vid
         o.cnfworoot = [ [e for e in sumterm if e!= elimvar ]
             for sumterm in self.cnfworoot if elimsumwith not in sumterm ]
-        o.definedvars = [ d for d in self.definedvars if d!= vid ]
-        o.inpvars = [ i for i in self.inpvars if i!= vid ]
         # transform intermediate nodes
         namedvals = set(self._varid.values())
         intervars = { abs(v) for sumterm in o.cnfworoot for v in sumterm if abs(v) not in namedvals }
         subst = { v:self.nextid() for v in intervars }
         subst[self.opvarid] = o.opvarid
-        o.cnfworoot = [
-            [ ( subst.get(v,v) if v>0 else -subst.get(-v,-v) ) for v in sumterm]
-            for sumterm in o.cnfworoot ]
+        substf = lambda l: [(subst.get(v,v) if v>0 else -subst.get(-v,-v) ) for v in l]
+        o.cnfworoot = [ substf(sumterm) for sumterm in o.cnfworoot ]
+        o.definedvars = substf(d for d in self.definedvars if d!= vid)
+        o.inpvars = substf(i for i in self.inpvars if i!= vid)
         return o
 
     # bdd is only for experimental purpose, returns a tuple of bdd and with op
