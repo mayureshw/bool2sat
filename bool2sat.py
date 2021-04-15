@@ -97,7 +97,7 @@ class CNF:
         cnf = self.cnfworoot
         idvar = { i:v for v,i in self._varid.items() }
         n2v = lambda n: idvar.get(abs(n),'v'+str(abs(n)))
-        self.bmgr.declare(*[ n2v(t) for p in cnf for t in p ])
+        self.bmgr.declare(*[ n2v(t) for p in self.cnf() for t in p ])
         n2bv = lambda n: ('~' if n<0 else '')+n2v(n)
         bdd = self.bmgr.andL(self.bmgr.orL(self.bmgr.add_expr(n2bv(t)) for t in p) for p in cnf)
         bddo = self.bmgr.shcf1(bdd,self.opvar)
