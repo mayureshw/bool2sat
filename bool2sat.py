@@ -82,21 +82,19 @@ class CNF:
         elimvar = -vid if tv else vid
         o.cnfworoot = [ [e for e in sumterm if e!= elimvar ]
             for sumterm in self.cnfworoot if elimsumwith not in sumterm ]
-        # transform intermediate nodes
-        namedvals = set(self._varid.values())
-        intervars = { abs(v) for sumterm in o.cnfworoot for v in sumterm if abs(v) not in namedvals }
+        intervars = { abs(v) for sumterm in o.cnfworoot for v in sumterm if abs(v) not in self.inpvars }
         subst = { v:self.nextid() for v in intervars }
         subst[self.opvarid] = o.opvarid
         substf = lambda l: [(subst.get(v,v) if v>0 else -subst.get(-v,-v) ) for v in l]
         o.cnfworoot = [ substf(sumterm) for sumterm in o.cnfworoot ]
-        o.definedvars = substf(d for d in self.definedvars if d!= vid)
+        o.definedvars = set(substf(d for d in self.definedvars if d!= vid) + [o.opvarid])
         o.inpvars = substf(i for i in self.inpvars if i!= vid)
         return o
 
     # bdd is only for experimental purpose, returns a tuple of bdd and with op
     # and intermediate variables quatified out
     def bdd(self):
-        cnf = self.cnf()
+        cnf = self.cnfworoot
         idvar = { i:v for v,i in self._varid.items() }
         n2v = lambda n: idvar.get(abs(n),'v'+str(abs(n)))
         self.bmgr.declare(*[ n2v(t) for p in cnf for t in p ])
@@ -116,7 +114,7 @@ class CNF:
         o = CNF(opvar)
         try: root = o.parser.parse(formula)
         except Exception:
-            print('parse error')
+            print('parse error in',formula)
             sys.exit()
         # for atomic formula we need special handling, for now, and with itself
         if root.type != 'operator': root = o.parser.parse(formula + '&' + formula)
