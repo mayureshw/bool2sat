@@ -71,30 +71,27 @@ class CNF:
             return ', '.join([(idvar[abs(i)] + '=' + ('0' if i<0 else '1'))
                 for i in satsoln if abs(i) in idvar])
         else: return 'false'
-            
-    # Returns a new cnf object by eliminating variable v by truth value tv
-    def let(self,v,tv):
+
+    # returns a transformed object by replacing output with opvar and
+    # substituting 0/1 as per v,tv . Uses new values for intermediate nodes.
+    def xform(self,opvar,v,tv):
+        o = CNF(opvar)
         vid = self.varid(v)
-        o = CNF(self.opvar)
+        # apply truth value v=tv
         elimsumwith = vid if tv else -vid
         elimvar = -vid if tv else vid
         o.cnfworoot = [ [e for e in sumterm if e!= elimvar ]
             for sumterm in self.cnfworoot if elimsumwith not in sumterm ]
         o.definedvars = [ d for d in self.definedvars if d!= vid ]
         o.inpvars = [ i for i in self.inpvars if i!= vid ]
-        return o
-
-    def rename(self,x,y):
-        vx = self.varid(x)
-        vy = self.varid(y)
-        o = CNF(self.opvar)
-        subst = lambda l : [ vy if e == vx else -vy if e == -vx else e for e in l]
-        o.cnfworoot = [ subst(sumterm) for sumterm in self.cnfworoot ]
-        o.definedvars = subst(self.definedvars)
-        o.inpvars = subst(self.inpvars)
-        if o.opvar == x:
-            o.opvar = y
-            o.opvarid = vy
+        # transform intermediate nodes
+        namedvals = set(self._varid.values())
+        intervars = { abs(v) for sumterm in o.cnfworoot for v in sumterm if abs(v) not in namedvals }
+        subst = { v:self.nextid() for v in intervars }
+        subst[self.opvarid] = o.opvarid
+        o.cnfworoot = [
+            [ ( subst.get(v,v) if v>0 else -subst.get(-v,-v) ) for v in sumterm]
+            for sumterm in o.cnfworoot ]
         return o
 
     # bdd is only for experimental purpose, returns a tuple of bdd and with op
