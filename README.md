@@ -21,6 +21,8 @@ Most typical way to install: apt install minisat
 
 ## Command line
 
+NOTE: The command line usage is deprecated. May be restored in future.
+
 python3 bool2sat.py [formula filename]
 
 You can write your formula in a file and provide filename as an argument.
@@ -34,7 +36,27 @@ Else it would produce a DIMACS formula in file cnf.txt, run minisat on it and sh
 
 ## As API
 
-import the CNF class from bool2sat, construct a cnf object by passing the formula string to it. Look at the dump and minisat APIs that do the things described above.
+import the CNF class from bool2sat.
+
+### Constructing a CNF object
+
+You can construct a cnf object by one of the various methods:
+
+All construction methods mandate naming the formula with a variable. It is caller's responsibility to keep the naming unique, otherwise the results can be unpredictable.
+
+1. byformula: Pass a boolean formula. See a link to the formula grammar below.
+2. byequation: You can pass multiple formulas in a dictionary with their variable names as the key. This is the most common and useful construction method to represent complex circuits.
+3. bymerge: You can take multiple cnf formulas already constructed and merge them (logically and) into one by passing to this method.
+4. let: Substitute a given variable with a given truth value and return new cnf object. Note that, for consistency with other formulas, all variables other than input variables are transformed to new values.
+
+Note that 'by*' are class APIs, to be usually invoked as CNF.<api> while 'let' is to be invoked on an existing object on which it will carry out substitution
+
+### Important APIs on the CNF object
+
+1. minisat: Runs minisat on the CNF and returns a solution in terms of user varaibles if found, else returns false.
+
+2. bdd: Returns a bdd representation of a CNF. Returns a tuple of bdd of the formulas as-is and with intermediate variables existentially quantified. This is not the core functionality, since you would use SAT on problems where bdds won't usually scale! But it can be useful during development, for example, to see a compact representation of the formula etc.
+
 
 # Boolean formula grammar
 
