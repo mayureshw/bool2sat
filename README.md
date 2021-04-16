@@ -40,7 +40,7 @@ import the CNF class from bool2sat.
 
 ### Constructing a CNF object
 
-You can construct a cnf object by one of the various methods:
+You can construct a cnf object by one of the following methods:
 
 All construction methods mandate naming the formula with a variable. It is caller's responsibility to keep the naming unique, otherwise the results can be unpredictable.
 
@@ -55,7 +55,7 @@ Note that 'by*' are class APIs, to be usually invoked as CNF.<api> while 'let' i
 
 1. minisat: Runs minisat on the CNF and returns a solution in terms of user varaibles if found, else returns false.
 
-2. bdd: Returns a bdd representation of a CNF. Returns a tuple of bdd of the formulas as-is and with intermediate variables existentially quantified. This is not the core functionality, since you would use SAT on problems where bdds won't usually scale! But it can be useful during development, for example, to see a compact representation of the formula etc.
+2. bdd: Returns a bdd representation of a CNF. Returns a tuple of bdd of the formulas as-is and with intermediate variables existentially quantified. This is not the core functionality, since you would use SAT on problems where bdds won't usually scale! But it can be useful during development, for example, to see a compact representation of the formula etc. At present a module required to use this functionality is not included in the package. May add it in future.
 
 
 # Boolean formula grammar
