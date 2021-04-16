@@ -58,6 +58,16 @@ Note that 'by*' are class APIs, to be usually invoked as CNF.<api> while 'let' i
 2. bdd: Returns a bdd representation of a CNF. Returns a tuple of bdd of the formulas as-is and with intermediate variables existentially quantified. This is not the core functionality, since you would use SAT on problems where bdds won't usually scale! But it can be useful during development, for example, to see a compact representation of the formula etc. At present a module required to use this functionality is not included in the package. May add it in future.
 
 
+# Applications
+
+The package has been successfully used for the following kind of problems, though on a small scale.
+
+1. Finding 'stuck-at' tests for all gate outputs in a circuit
+
+2. Proving state machine equivalence up to a given number of time steps
+
+We may add sample snippets in future.
+
 # Boolean formula grammar
 
 For formal grammar of the formula please refer to the parser documentation at the following link:
