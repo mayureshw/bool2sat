@@ -33,6 +33,7 @@ class CNF:
         newid = self.nextid()
         CNF._varid[v] = newid
         return newid
+    def idvar(self): return { i:v for v,i in self._varid.items() }
     def nextid(self):
         CNF.nodecntr = CNF.nodecntr + 1
         return CNF.nodecntr
@@ -58,22 +59,26 @@ class CNF:
     def dump(self,opvarid=None):
         with open(self.cnfopfile,'w') as fd: fd.write(self.dimacs(opvarid))
 
+    def solnlabel(self):
+        if self.soln == [] : return 'false'
+        idvar = self.idvar()
+        return ', '.join([(idvar[abs(i)] + '=' + ('0' if i<0 else '1'))
+                for i in self.soln if abs(i) in self.inpvars])
+
     # Run minisat and report results and if satisfiable decode the solution into user's variables
     # eliminating intermediate variables
     def minisat(self,opvarid=None):
         # Intern the SAT soln as they may be referred again
-        if self.soln != None: return self.soln
+        if self.soln != None: return self.solnlabel()
         self.dump(opvarid)
         satop = subprocess.run(['minisat',self.cnfopfile,self.satopfile],
             capture_output=True, encoding='ascii')
         if satop.returncode == 10:
             idvar = { i:v for v,i in self._varid.items() if i in self.inpvars }
             with open(self.satopfile) as fd:
-                satsoln = [int(i) for i in fd.readlines()[-1].split()[:-1]]
-            self.soln = ', '.join([(idvar[abs(i)] + '=' + ('0' if i<0 else '1'))
-                for i in satsoln if abs(i) in idvar])
-        else: self.soln = 'false'
-        return self.soln
+                self.soln = [int(i) for i in fd.readlines()[-1].split()[:-1]]
+        else: self.soln = []
+        return self.solnlabel()
 
     # returns a transformed object by replacing output with opvar and
     # substituting 0/1 as per v,tv . Uses new values for intermediate nodes.
@@ -98,7 +103,7 @@ class CNF:
     # and intermediate variables quatified out
     def bdd(self):
         cnf = self.cnfworoot # bdd doesn't include anding of op
-        idvar = { i:v for v,i in self._varid.items() }
+        idvar = self.idvar()
         n2v = lambda n: idvar.get(abs(n),'v'+str(abs(n)))
         self.bmgr.declare(*[ n2v(t) for p in self.cnf() for t in p ])
         n2bv = lambda n: ('~' if n<0 else '')+n2v(n)
