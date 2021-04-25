@@ -61,6 +61,8 @@ class CNF:
     # Run minisat and report results and if satisfiable decode the solution into user's variables
     # eliminating intermediate variables
     def minisat(self,opvarid=None):
+        # Intern the SAT soln as they may be referred again
+        if self.soln != None: return self.soln
         self.dump(opvarid)
         satop = subprocess.run(['minisat',self.cnfopfile,self.satopfile],
             capture_output=True, encoding='ascii')
@@ -68,9 +70,10 @@ class CNF:
             idvar = { i:v for v,i in self._varid.items() if i in self.inpvars }
             with open(self.satopfile) as fd:
                 satsoln = [int(i) for i in fd.readlines()[-1].split()[:-1]]
-            return ', '.join([(idvar[abs(i)] + '=' + ('0' if i<0 else '1'))
+            self.soln = ', '.join([(idvar[abs(i)] + '=' + ('0' if i<0 else '1'))
                 for i in satsoln if abs(i) in idvar])
-        else: return 'false'
+        else: self.soln = 'false'
+        return self.soln
 
     # returns a transformed object by replacing output with opvar and
     # substituting 0/1 as per v,tv . Uses new values for intermediate nodes.
@@ -146,6 +149,7 @@ class CNF:
         self.cnfworoot = []
         self.definedvars = set()
         self.inpvars = set()
+        self.soln = None
 
 # When opvar support was added CLI was removed. A new CLI may be added later
 # This is merely a test driver now
