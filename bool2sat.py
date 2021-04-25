@@ -62,8 +62,8 @@ class CNF:
 
     def _solnlabel(self):
         if self.soln == [] : return 'false'
-        return ', '.join([(self._idvar[abs(i)] + '=' + ('0' if i<0 else '1'))
-                for i in self.soln if abs(i) in self.inpvars])
+        return ', '.join(sorted([(self._idvar[abs(i)] + '=' + ('0' if i<0 else '1'))
+                for i in self.soln if abs(i) in self.inpvars]))
 
     # Run minisat and report results and if satisfiable decode the solution into user's variables
     # eliminating intermediate variables
