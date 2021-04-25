@@ -28,12 +28,13 @@ class CNF:
     parser = Parser()
     nodecntr = 0
     _varid = {}
+    _idvar = {}
     def varid(self,v):
         if v in CNF._varid: return CNF._varid[v]
         newid = self.nextid()
         CNF._varid[v] = newid
+        CNF._idvar[newid] = v
         return newid
-    def idvar(self): return { i:v for v,i in self._varid.items() }
     def nextid(self):
         CNF.nodecntr = CNF.nodecntr + 1
         return CNF.nodecntr
@@ -61,8 +62,7 @@ class CNF:
 
     def solnlabel(self):
         if self.soln == [] : return 'false'
-        idvar = self.idvar()
-        return ', '.join([(idvar[abs(i)] + '=' + ('0' if i<0 else '1'))
+        return ', '.join([(self._idvar[abs(i)] + '=' + ('0' if i<0 else '1'))
                 for i in self.soln if abs(i) in self.inpvars])
 
     # Run minisat and report results and if satisfiable decode the solution into user's variables
@@ -74,7 +74,6 @@ class CNF:
         satop = subprocess.run(['minisat',self.cnfopfile,self.satopfile],
             capture_output=True, encoding='ascii')
         if satop.returncode == 10:
-            idvar = { i:v for v,i in self._varid.items() if i in self.inpvars }
             with open(self.satopfile) as fd:
                 self.soln = [int(i) for i in fd.readlines()[-1].split()[:-1]]
         else: self.soln = []
@@ -103,8 +102,7 @@ class CNF:
     # and intermediate variables quatified out
     def bdd(self):
         cnf = self.cnfworoot # bdd doesn't include anding of op
-        idvar = self.idvar()
-        n2v = lambda n: idvar.get(abs(n),'v'+str(abs(n)))
+        n2v = lambda n: self._idvar.get(abs(n),'v'+str(abs(n)))
         self.bmgr.declare(*[ n2v(t) for p in self.cnf() for t in p ])
         n2bv = lambda n: ('~' if n<0 else '')+n2v(n)
         bdd = self.bmgr.andL(self.bmgr.orL(self.bmgr.add_expr(n2bv(t)) for t in p) for p in cnf)
