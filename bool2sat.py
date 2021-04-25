@@ -60,24 +60,48 @@ class CNF:
     def dump(self,opvarid=None):
         with open(self.cnfopfile,'w') as fd: fd.write(self.dimacs(opvarid))
 
-    def solnlabel(self):
+    def _solnlabel(self):
         if self.soln == [] : return 'false'
         return ', '.join([(self._idvar[abs(i)] + '=' + ('0' if i<0 else '1'))
                 for i in self.soln if abs(i) in self.inpvars])
 
     # Run minisat and report results and if satisfiable decode the solution into user's variables
     # eliminating intermediate variables
-    def minisat(self,opvarid=None):
+    def minisat(self,opvarid=None,label=True):
         # Intern the SAT soln as they may be referred again
-        if self.soln != None: return self.solnlabel()
+        if self.soln != None: return self._solnlabel() if label else self.soln
         self.dump(opvarid)
         satop = subprocess.run(['minisat',self.cnfopfile,self.satopfile],
             capture_output=True, encoding='ascii')
         if satop.returncode == 10:
             with open(self.satopfile) as fd:
-                self.soln = [int(i) for i in fd.readlines()[-1].split()[:-1]]
+                self.soln = [int(i) for i in fd.readlines()[-1].split()[:-1]
+                if abs(int(i)) in self.inpvars]
         else: self.soln = []
-        return self.solnlabel()
+        return self._solnlabel() if label else self.soln
+
+    # Return the solution's CNF object (useful for satisfies check for example)
+    # Beware the returned CNF will have opvar as _soln_<opvar>. If somehow you
+    # have more than 1 solutions to the same opvar, which you wish to combine,
+    # the name may clash.
+    def solncnf(self):
+        # TODO: A more efficient way to equate a CNF directly with a opvar should be possible
+        solnopvar = '_soln_'+self.opvar
+        solnformula = '~('+ solnopvar + ' ^ (' + '&'.join(
+            ( ('~' if i<0 else '') + self._idvar[abs(i)] )
+            for i in self.minisat(label=False)) + '))'
+        return CNF.byformula(solnopvar,solnformula)
+
+    # soln is expectd to be a list of CNF like integers (single minterm)
+    # The api returns a boolean whether the soln satisfies this cnf formula Why
+    # not just get a new soln as this requires running SAT anyway?: You may
+    # want to keep soln count minimal in applications susch as test generation.
+    def satisfiedby(self,solncnf):
+        notsatcnf = CNF.bymerge('_notsat',[
+        self, solncnf,
+        CNF.byformula('_notsat',solncnf.opvar+'&~'+self.opvar) # negation of soln->opvar
+        ])
+        return notsatcnf.minisat() == 'false'
 
     # returns a transformed object by replacing output with opvar and
     # substituting 0/1 as per v,tv . Uses new values for intermediate nodes.
@@ -167,4 +191,14 @@ if __name__=='__main__':
     print(cnf3.minisat())
 
     cnf4 = CNF.byequations('q',{'p':'a&b','q':'p&d',})
-    print(cnf4.minisat(-cnf2.varid('p')))
+    print(cnf4.minisat())
+
+    print('cnf4 satisfied by its own soln:',cnf4.satisfiedby(cnf4.solncnf()))
+
+    cnf5 = CNF.byformula('r','a&b&c')
+    print('cnf1 satisfied by cnf5 soln:',cnf1.satisfiedby(cnf5.solncnf()))
+    print('cnf5 satisfied by cnf1 soln:',cnf5.satisfiedby(cnf1.solncnf()))
+
+    cnf6 = CNF.byformula('s','a&~b')
+    print('cnf1 satisfied by cnf6 soln:',cnf1.satisfiedby(cnf6.solncnf()))
+    print('cnf6 satisfied by cnf1 soln:',cnf6.satisfiedby(cnf1.solncnf()))
