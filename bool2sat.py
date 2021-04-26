@@ -67,16 +67,17 @@ class CNF:
 
     # Run minisat and report results and if satisfiable decode the solution into user's variables
     # eliminating intermediate variables
-    def minisat(self,opvarid=None,label=True):
+    def minisat(self,opvarid=None,label=True,filtvars=[]):
         # Intern the SAT soln as they may be referred again
         if self.soln != None: return self._solnlabel() if label else self.soln
         self.dump(opvarid)
         satop = subprocess.run(['minisat',self.cnfopfile,self.satopfile],
             capture_output=True, encoding='ascii')
         if satop.returncode == 10:
+            filtvarsi = {self._varid[v] for v in filtvars}
+            varfilter = lambda i: i in self.inpvars and i not in filtvarsi
             with open(self.satopfile) as fd:
-                self.soln = [int(i) for i in fd.readlines()[-1].split()[:-1]
-                if abs(int(i)) in self.inpvars]
+                self.soln = [int(i) for i in fd.readlines()[-1].split()[:-1] if varfilter(abs(int(i)))]
         else: self.soln = []
         return self._solnlabel() if label else self.soln
 
