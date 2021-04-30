@@ -124,7 +124,7 @@ class CNF:
         return o
 
     # bdd is only for experimental purpose, returns a tuple of bdd and with op
-    # and intermediate variables quatified out
+    # and intermediate variables quantified out
     def bdd(self):
         cnf = self.cnfworoot # bdd doesn't include anding of op
         n2v = lambda n: self._idvar.get(abs(n),'v'+str(abs(n)))
