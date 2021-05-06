@@ -3,9 +3,9 @@ from dd._parser import Parser
 from functools import reduce
 import subprocess
 import sys
-from pybdd import BMgr # Only for development purposes
+#from pybdd import BMgr # Only for development purposes
 class CNF:
-    bmgr = BMgr()
+    #bmgr = BMgr()
 
     # Various CNF transformations are taken from here:
     # https://en.wikipedia.org/wiki/Tseytin_transformation There is virtually
